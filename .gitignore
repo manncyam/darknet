@@ -21,3 +21,11 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.swp
+*.VC.*
+*.pbd
+.vs/
+*.pdb
+windows_darknet/darknet/src/
+windows_darknet/x64/
+windows_darknet/darknet/x64
+~AutoRecover.darknet.vcxproj
