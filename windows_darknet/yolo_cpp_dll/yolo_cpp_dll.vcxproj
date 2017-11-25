@@ -160,7 +160,7 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\propertysheets\yolo_v2_class.props" />
+    <Import Project="..\propertysheets\yolo_v2_class_x64_debug.props" />
     <Import Project="..\propertysheets\cuda_x64_debug.props" />
     <Import Project="..\propertysheets\pthread_x64_debug.props" />
     <Import Project="..\propertysheets\cudnn_x64_debug.props" />
@@ -175,6 +175,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>$(ProjectName)d</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
