@@ -13,7 +13,6 @@ convnet/
 decaf/
 submission/
 cfg/
-darknet
 .fuse*
 
 # OS Generated #
@@ -22,3 +21,11 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.swp
+*.VC.*
+*.pbd
+.vs/
+*.pdb
+windows_darknet/*/src/
+windows_darknet/x64/
+windows_darknet/*/x64
+~AutoRecover.darknet.vcxproj
