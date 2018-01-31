@@ -85,9 +85,9 @@ int main(int argc, char *argv[])
 	std::string filename;
 	if (argc > 1) filename = argv[1];
 
-	Detector detector("cfg/yolo-voc.cfg", "yolo-voc.weights");
+	Detector detector("cfg/yolo.cfg", "yolo.weights");
 
-	auto obj_names = objects_names_from_file("data/voc.names");
+	auto obj_names = objects_names_from_file("data/coco.names");
 	std::string out_videofile = "result.avi";
 	bool const save_output_videofile = false;
 
@@ -209,7 +209,11 @@ int main(int argc, char *argv[])
 			}
 			else {	// image file
 				cv::Mat mat_img = cv::imread(filename);
-				std::vector<bbox_t> result_vec = detector.detect(mat_img);
+				//std::vector<bbox_t> result_vec = detector.detect(mat_img);
+				cv::cuda::GpuMat gpu_mat_img;
+				gpu_mat_img.upload(mat_img);
+				std::vector<bbox_t> result_vec = detector.detect_gpu(gpu_mat_img, gpu_mat_img.size());
+				
 				result_vec = detector.tracking(result_vec);	// comment it - if track_id is not required
 				draw_boxes(mat_img, result_vec, obj_names);
 				show_console_result(result_vec, obj_names);

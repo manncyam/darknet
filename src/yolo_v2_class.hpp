@@ -42,13 +42,15 @@ struct image_t {
 class Detector {
 	std::shared_ptr<void> detector_gpu_ptr;
 public:
-	float nms = .4;
+	float nms;
 
+	YOLODLL_API Detector() {};
 	YOLODLL_API Detector(std::string cfg_filename, std::string weight_filename, int gpu_id = 0);
 	YOLODLL_API ~Detector();
 
 	YOLODLL_API std::vector<bbox_t> detect(std::string image_filename, float thresh = 0.2, bool use_mean = false);
 	YOLODLL_API std::vector<bbox_t> detect(image_t img, float thresh = 0.2, bool use_mean = false);
+	YOLODLL_API std::vector<bbox_t> detect_gpu(unsigned char* dev_src, float* x_gpu, int rows, int cols, int channels, int step, int org_width, int org_height, float thresh = 0.2, bool use_mean = false);
 	static YOLODLL_API image_t load_image(std::string image_filename);
 	static YOLODLL_API void free_image(image_t m);
 	YOLODLL_API int get_net_width() const;
@@ -57,6 +59,20 @@ public:
 	YOLODLL_API std::vector<bbox_t> tracking(std::vector<bbox_t> cur_bbox_vec, int const frames_story = 6);
 
 #ifdef OPENCV
+	std::vector<bbox_t> detect_gpu(cv::cuda::GpuMat gpu_mat, cv::Size org_size, float thresh = 0.2, bool use_mean = false)
+	{
+		cv::cuda::GpuMat rz_rgb;
+		if (get_net_width() != gpu_mat.cols || get_net_height() != gpu_mat.rows) {
+			cv::cuda::resize(gpu_mat, rz_rgb, cv::Size(get_net_width(), get_net_height()));
+		}
+		else {
+			rz_rgb = gpu_mat;
+		}
+
+		cv::cuda::GpuMat x_gpu(1, rz_rgb.rows * rz_rgb.cols * rz_rgb.channels(), CV_32FC1);
+		return detect_gpu(rz_rgb.data, (float*)x_gpu.data, rz_rgb.rows, rz_rgb.cols, rz_rgb.channels(), rz_rgb.step, org_size.width, org_size.height, thresh, use_mean);
+	}
+
 	std::vector<bbox_t> detect(cv::Mat mat, float thresh = 0.2, bool use_mean = false)
 	{
 		if(mat.data == NULL)

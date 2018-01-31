@@ -1,6 +1,7 @@
 #include "yolo_v2_class.hpp"
 
 #include "network.h"
+#include "im2OneRow.h"
 
 extern "C" {
 #include "detection_layer.h"
@@ -33,9 +34,9 @@ struct detector_gpu_t{
 	unsigned int *track_id;
 };
 
-
 YOLODLL_API Detector::Detector(std::string cfg_filename, std::string weight_filename, int gpu_id)
 {
+	nms = 0.4;
 	int old_gpu_index;
 #ifdef GPU
 	cudaGetDevice(&old_gpu_index);
@@ -180,9 +181,6 @@ YOLODLL_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool
 	cudaGetDevice(&old_gpu_index);
 	cudaSetDevice(net.gpu_index);
 #endif
-	//std::cout << "net.gpu_index = " << net.gpu_index << std::endl;
-
-	//float nms = .4;
 
 	image im;
 	im.c = img.c;
@@ -301,4 +299,66 @@ YOLODLL_API std::vector<bbox_t> Detector::tracking(std::vector<bbox_t> cur_bbox_
 	if (prev_bbox_vec_deque.size() > frames_story) prev_bbox_vec_deque.pop_back();
 
 	return cur_bbox_vec;
+}
+
+YOLODLL_API std::vector<bbox_t> Detector::detect_gpu(unsigned char* dev_src, float* x_gpu, int rows, int cols, int channels, int step,
+								int org_width, int org_height, float thresh, bool use_mean)
+{
+	// convert to 1D vector
+	im2OneRow(dev_src, x_gpu, channels, rows, cols, step);
+
+	detector_gpu_t &detector_gpu = *reinterpret_cast<detector_gpu_t *>(detector_gpu_ptr.get());
+	network &net = detector_gpu.net;
+	int old_gpu_index;
+#ifdef GPU
+	cudaGetDevice(&old_gpu_index);
+	cudaSetDevice(net.gpu_index);
+#endif
+	layer l = net.layers[net.n - 1];
+	network_state state;
+	state.index = 0;
+	state.net = net;
+	state.input = x_gpu;
+	state.truth = 0;
+	state.train = 0;
+	state.delta = 0;
+	forward_network_gpu(net, state);
+
+	float *prediction = get_network_output_gpu(net);
+
+	if (use_mean) {
+		memcpy(detector_gpu.predictions[detector_gpu.demo_index], prediction, l.outputs * sizeof(float));
+		mean_arrays(detector_gpu.predictions, FRAMES, l.outputs, detector_gpu.avg);
+		l.output = detector_gpu.avg;
+		detector_gpu.demo_index = (detector_gpu.demo_index + 1) % FRAMES;
+	}
+
+	get_region_boxes(l, 1, 1, thresh, detector_gpu.probs, detector_gpu.boxes, 0, 0);
+	if (nms) do_nms_sort(detector_gpu.boxes, detector_gpu.probs, l.w*l.h*l.n, l.classes, nms);
+	//draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
+
+	std::vector<bbox_t> bbox_vec;
+
+	for (size_t i = 0; i < (l.w*l.h*l.n); ++i) {
+		box b = detector_gpu.boxes[i];
+		int const obj_id = max_index(detector_gpu.probs[i], l.classes);
+		float const prob = detector_gpu.probs[i][obj_id];
+
+		if (prob > thresh)
+		{
+			bbox_t bbox;
+			bbox.x = std::max((double)0, (b.x - b.w / 2.) * org_width);
+			bbox.y = std::max((double)0, (b.y - b.h / 2.) * org_height);
+			bbox.w = b.w * org_width;
+			bbox.h = b.h * org_height;
+			bbox.obj_id = obj_id;
+			bbox.prob = prob;
+			bbox.track_id = 0;
+
+			bbox_vec.push_back(bbox);
+		}
+	}
+
+	cudaSetDevice(old_gpu_index);
+	return bbox_vec;
 }

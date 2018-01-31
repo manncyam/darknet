@@ -20,6 +20,7 @@
     <CudaCompile Include="..\..\src\deconvolutional_kernels.cu" />
     <CudaCompile Include="..\..\src\dropout_layer_kernels.cu" />
     <CudaCompile Include="..\..\src\im2col_kernels.cu" />
+    <CudaCompile Include="..\..\src\im2OneRow_kernel.cu" />
     <CudaCompile Include="..\..\src\maxpool_layer_kernels.cu" />
     <CudaCompile Include="..\..\src\network_kernels.cu" />
   </ItemGroup>
@@ -112,6 +113,7 @@
     <ClInclude Include="..\..\src\gettimeofday.h" />
     <ClInclude Include="..\..\src\gru_layer.h" />
     <ClInclude Include="..\..\src\im2col.h" />
+    <ClInclude Include="..\..\src\im2OneRow.h" />
     <ClInclude Include="..\..\src\image.h" />
     <ClInclude Include="..\..\src\layer.h" />
     <ClInclude Include="..\..\src\list.h" />
