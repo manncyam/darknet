@@ -14,12 +14,13 @@
 #include "opencv2/highgui/highgui_c.h"
 #include "opencv2/imgproc/imgproc_c.h"
 #include "opencv2/core/version.hpp"
+#include "http_stream.h"
 #ifndef CV_VERSION_EPOCH
 #include "opencv2/videoio/videoio_c.h"
 #include "opencv2/imgcodecs/imgcodecs_c.h"
+#include "http_stream.h"
 #endif
 #endif
-
 
 int windows = 0;
 
@@ -527,7 +528,7 @@ void show_image_cv(image p, const char *name)
 }
 
 
-void show_image_cv_ipl(IplImage *disp, const char *name, const char *out_filename)
+void show_image_cv_ipl(IplImage *disp, const char *name, CvVideoWriter *output_video_writer, int http_stream_port)
 {
 	if (disp == NULL) return;
 	char buff[256];
@@ -538,27 +539,19 @@ void show_image_cv_ipl(IplImage *disp, const char *name, const char *out_filenam
 	++windows;
 	cvShowImage(buff, disp);
 
-	if(out_filename)
-	{
-		CvSize size;
-		{
-			size.width = disp->width, size.height = disp->height;
-		}
-		
-		static CvVideoWriter* output_video = NULL;    // cv::VideoWriter output_video;
-		if (output_video == NULL)
-		{
-			//const char* output_name = "test_dnn_out.avi";
-			//output_video = cvCreateVideoWriter(out_filename, CV_FOURCC('H', '2', '6', '4'), 25, size, 1);
-			output_video = cvCreateVideoWriter(out_filename, CV_FOURCC('D', 'I', 'V', 'X'), 25, size, 1);
-			//output_video = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'J', 'P', 'G'), 25, size, 1);
-			//output_video = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'P', '4', 'V'), 25, size, 1);
-			//output_video = cvCreateVideoWriter(out_filename, CV_FOURCC('M', 'P', '4', '2'), 25, size, 1);
-			//output_video = cvCreateVideoWriter(out_filename, CV_FOURCC('X', 'V', 'I', 'D'), 25, size, 1);
-			//output_video = cvCreateVideoWriter(out_filename, CV_FOURCC('W', 'M', 'V', '2'), 25, size, 1);
-		}
 
-		cvWriteFrame(output_video, disp);	// comment this line to improve FPS !!!
+	// http mjpeg stream: http://localhost:8090
+	// use URL with the port number stated in your command line instead of 8090
+	if (http_stream_port > 0) {
+		//int port = 8090;
+		int port = http_stream_port;
+		int timeout = 200;
+		int jpeg_quality = 30;	// 1 - 100
+		send_mjpeg(disp, port, timeout, jpeg_quality);
+	}
+
+	if(output_video_writer) {
+		cvWriteFrame(output_video_writer, disp);	// comment this line to improve FPS !!!
 		printf("\n cvWriteFrame \n");
 	}
 

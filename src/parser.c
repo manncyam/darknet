@@ -238,15 +238,17 @@ layer parse_region(list *options, size_params params)
     int coords = option_find_int(options, "coords", 4);
     int classes = option_find_int(options, "classes", 20);
     int num = option_find_int(options, "num", 1);
+	int max_boxes = option_find_int_quiet(options, "max", 30);
 
-    layer l = make_region_layer(params.batch, params.w, params.h, num, classes, coords);
+    layer l = make_region_layer(params.batch, params.w, params.h, num, classes, coords, max_boxes);
     assert(l.outputs == params.inputs);
 
     l.log = option_find_int_quiet(options, "log", 0);
     l.sqrt = option_find_int_quiet(options, "sqrt", 0);
 
+	l.small_object = option_find_int_quiet(options, "small_object", 0);
     l.softmax = option_find_int(options, "softmax", 0);
-    l.max_boxes = option_find_int_quiet(options, "max",30);
+    //l.max_boxes = option_find_int_quiet(options, "max",30);
     l.jitter = option_find_float(options, "jitter", .2);
     l.rescore = option_find_int_quiet(options, "rescore",0);
 
@@ -532,6 +534,7 @@ void parse_net_options(list *options, network *net)
     net->saturation = option_find_float_quiet(options, "saturation", 1);
     net->exposure = option_find_float_quiet(options, "exposure", 1);
     net->hue = option_find_float_quiet(options, "hue", 0);
+	net->power = option_find_float_quiet(options, "power", 4);
 
     if(!net->inputs && !(net->h && net->w && net->c)) error("No input parameters supplied");
 
@@ -571,7 +574,7 @@ void parse_net_options(list *options, network *net)
         net->gamma = option_find_float(options, "gamma", 1);
         net->step = option_find_int(options, "step", 1);
     } else if (net->policy == POLY || net->policy == RANDOM){
-        net->power = option_find_float(options, "power", 1);
+        //net->power = option_find_float(options, "power", 1);
     }
     net->max_batches = option_find_int(options, "max_batches", 0);
 }
@@ -672,6 +675,8 @@ network parse_network_cfg_custom(char *filename, int batch)
         }else{
             fprintf(stderr, "Type not recognized: %s\n", s->type);
         }
+        l.onlyforward = option_find_int_quiet(options, "onlyforward", 0);
+        l.stopbackward = option_find_int_quiet(options, "stopbackward", 0);
         l.dontload = option_find_int_quiet(options, "dontload", 0);
         l.dontloadscales = option_find_int_quiet(options, "dontloadscales", 0);
         option_unused(options);

@@ -11,7 +11,7 @@
 
 #define DOABS 1
 
-region_layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
+region_layer make_region_layer(int batch, int w, int h, int n, int classes, int coords, int max_boxes)
 {
     region_layer l = {0};
     l.type = REGION;
@@ -27,7 +27,8 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
     l.bias_updates = calloc(n*2, sizeof(float));
     l.outputs = h*w*n*(classes + coords + 1);
     l.inputs = l.outputs;
-    l.truths = 30*(5);
+	l.max_boxes = max_boxes;
+    l.truths = max_boxes*(5);
     l.delta = calloc(batch*l.outputs, sizeof(float));
     l.output = calloc(batch*l.outputs, sizeof(float));
     int i;
@@ -52,6 +53,8 @@ region_layer make_region_layer(int batch, int w, int h, int n, int classes, int 
 
 void resize_region_layer(layer *l, int w, int h)
 {
+	int old_w = l->w;
+	int old_h = l->h;
     l->w = w;
     l->h = h;
 
@@ -62,11 +65,13 @@ void resize_region_layer(layer *l, int w, int h)
     l->delta = realloc(l->delta, l->batch*l->outputs*sizeof(float));
 
 #ifdef GPU
-    cuda_free(l->delta_gpu);
-    cuda_free(l->output_gpu);
+	if (old_w < w || old_h < h) {
+		cuda_free(l->delta_gpu);
+		cuda_free(l->output_gpu);
 
-    l->delta_gpu =     cuda_make_array(l->delta, l->batch*l->outputs);
-    l->output_gpu =    cuda_make_array(l->output, l->batch*l->outputs);
+		l->delta_gpu = cuda_make_array(l->delta, l->batch*l->outputs);
+		l->output_gpu = cuda_make_array(l->output, l->batch*l->outputs);
+	}
 #endif
 }
 
@@ -169,7 +174,7 @@ void forward_region_layer(const region_layer l, network_state state)
         for (b = 0; b < l.batch; ++b){
             for(i = 0; i < l.h*l.w*l.n; ++i){
                 int index = size*i + b*l.outputs;
-                softmax(l.output + index + 5, l.classes, 1, l.output + index + 5);
+                softmax(l.output + index + 5, l.classes, 1, l.output + index + 5, 1);
             }
         }
     }
@@ -187,7 +192,7 @@ void forward_region_layer(const region_layer l, network_state state)
     for (b = 0; b < l.batch; ++b) {
         if(l.softmax_tree){
             int onlyclass = 0;
-            for(t = 0; t < 30; ++t){
+            for(t = 0; t < l.max_boxes; ++t){
                 box truth = float_to_box(state.truth + t*5 + b*l.truths);
                 if(!truth.x) break;
                 int class = state.truth[t*5 + b*l.truths + 4];
@@ -219,7 +224,7 @@ void forward_region_layer(const region_layer l, network_state state)
                     box pred = get_region_box(l.output, l.biases, n, index, i, j, l.w, l.h);
                     float best_iou = 0;
                     int best_class = -1;
-                    for(t = 0; t < 30; ++t){
+                    for(t = 0; t < l.max_boxes; ++t){
                         box truth = float_to_box(state.truth + t*5 + b*l.truths);
                         if(!truth.x) break;
                         float iou = box_iou(pred, truth);
@@ -256,7 +261,7 @@ void forward_region_layer(const region_layer l, network_state state)
                 }
             }
         }
-        for(t = 0; t < 30; ++t){
+        for(t = 0; t < l.max_boxes; ++t){
             box truth = float_to_box(state.truth + t*5 + b*l.truths);
 
             if(!truth.x) break;
@@ -409,6 +414,7 @@ void forward_region_layer_gpu(const region_layer l, network_state state)
         cuda_pull_array(state.truth, truth_cpu, num_truth);
     }
     cuda_pull_array(l.output_gpu, in_cpu, l.batch*l.inputs);
+	cudaStreamSynchronize(get_cuda_stream());
     network_state cpu_state = state;
     cpu_state.train = state.train;
     cpu_state.truth = truth_cpu;
@@ -418,6 +424,7 @@ void forward_region_layer_gpu(const region_layer l, network_state state)
     free(cpu_state.input);
     if(!state.train) return;
     cuda_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);
+	cudaStreamSynchronize(get_cuda_stream());
     if(cpu_state.truth) free(cpu_state.truth);
 }
 

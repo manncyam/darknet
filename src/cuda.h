@@ -26,13 +26,16 @@ int *cuda_make_int_array(size_t n);
 void cuda_push_array(float *x_gpu, float *x, size_t n);
 void cuda_pull_array(float *x_gpu, float *x, size_t n);
 void cuda_set_device(int n);
+int cuda_get_device();
 void cuda_free(float *x_gpu);
 void cuda_random(float *x_gpu, size_t n);
 float cuda_compare(float *x_gpu, float *x, size_t n, char *s);
 dim3 cuda_gridsize(size_t n);
+cudaStream_t get_cuda_stream();
 
 #ifdef CUDNN
 cudnnHandle_t cudnn_handle();
+enum {cudnn_fastest, cudnn_smallest};
 #endif
 
 #endif

@@ -63,6 +63,7 @@ struct layer{
     int out_h, out_w, out_c;
     int n;
     int max_boxes;
+	int small_object;
     int groups;
     int size;
     int side;
@@ -122,6 +123,8 @@ struct layer{
     int classfix;
     int absolute;
 
+    int onlyforward;
+    int stopbackward;
     int dontload;
     int dontloadscales;
 
@@ -238,6 +241,9 @@ struct layer{
     float * x_norm_gpu;
     float * weights_gpu;
     float * weight_updates_gpu;
+
+	float * weights_gpu16;
+	float * weight_updates_gpu16;
 
     float * biases_gpu;
     float * bias_updates_gpu;

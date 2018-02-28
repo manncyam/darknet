@@ -205,6 +205,9 @@
     <ClCompile Include="..\..\src\maxpool_layer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\http_stream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\activation_layer.h">
@@ -340,6 +343,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\http_stream.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

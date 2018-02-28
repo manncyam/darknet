@@ -3,6 +3,7 @@
 *.csv
 *.out
 *.png
+*.so
 mnist/
 data/
 caffe/
@@ -21,6 +22,10 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.swp
+
+# CMake #
+cmake-build-debug/
+CMakeLists.txt
 *.VC.*
 *.pbd
 .vs/

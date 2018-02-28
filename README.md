@@ -8,9 +8,11 @@
 4. [How to train (Pascal VOC Data)](#how-to-train-pascal-voc-data)
 5. [How to train (to detect your custom objects)](#how-to-train-to-detect-your-custom-objects)
 6. [When should I stop training](#when-should-i-stop-training)
-7. [How to improve object detection](#how-to-improve-object-detection)
-8. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
-9. [How to use Yolo as DLL](#how-to-use-yolo-as-dll)
+7. [How to calculate mAP on PascalVOC 2007](#how-to-calculate-map-on-pascalvoc-2007)
+8. [How to improve object detection](#how-to-improve-object-detection)
+9. [How to mark bounded boxes of objects and create annotation files](#how-to-mark-bounded-boxes-of-objects-and-create-annotation-files)
+10. [Using Yolo9000](#using-yolo9000)
+11. [How to use Yolo as DLL](#how-to-use-yolo-as-dll)
 
 |  ![Darknet Logo](http://pjreddie.com/media/files/darknet-black-small.png) | &nbsp; ![map_fps](https://hsto.org/files/a24/21e/068/a2421e0689fb43f08584de9d44c2215f.jpg) https://arxiv.org/abs/1612.08242 |
 |---|---|
@@ -30,13 +32,13 @@ This repository supports:
 
 * both Windows and Linux
 * both OpenCV 3.x and OpenCV 2.4.13
-* both cuDNN 5 and cuDNN 6
+* both cuDNN v5-v7
 * CUDA >= 7.5
 * also create SO-library on Linux and DLL-library on Windows
 
 ##### Requires: 
 * **Linux GCC>=4.9 or Windows MS Visual Studio 2015 (v140)**: https://go.microsoft.com/fwlink/?LinkId=532606&clcid=0x409  (or offline [ISO image](https://go.microsoft.com/fwlink/?LinkId=615448&clcid=0x409))
-* **CUDA 8.0**: https://developer.nvidia.com/cuda-downloads
+* **CUDA 9.1**: https://developer.nvidia.com/cuda-downloads
 * **OpenCV 3.x**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/3.2.0/opencv-3.2.0-vc14.exe/download
 * **or OpenCV 2.4.13**: https://sourceforge.net/projects/opencvlibrary/files/opencv-win/2.4.13/opencv-2.4.13.2-vc14.exe/download
   - OpenCV allows to show image or video detection in the window and store result to file that specified in command line `-out_filename res.avi`
@@ -89,6 +91,7 @@ On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector
 * 194 MB VOC-model - WebCamera #0: `darknet.exe detector demo data/voc.data yolo-voc.cfg yolo-voc.weights -c 0`
 * 186 MB Yolo9000 - image: `darknet.exe detector test cfg/combine9k.data yolo9000.cfg yolo9000.weights`
 * 186 MB Yolo9000 - video: `darknet.exe detector demo cfg/combine9k.data yolo9000.cfg yolo9000.weights test.mp4`
+* Remeber to put data/9k.tree and data/coco9k.map under the same folder of your app if you use the cpp api to build an app
 * To process a list of images `image_list.txt` and save results of detection to `result.txt` use:                             
     `darknet.exe detector test data/voc.data yolo-voc.cfg yolo-voc.weights < image_list.txt > result.txt`
     You can comment this line so that each image does not require pressing the button ESC: https://github.com/AlexeyAB/darknet/blob/6ccb41808caf753feea58ca9df79d6367dedc434/src/detector.c#L509
@@ -113,8 +116,8 @@ On Linux use `./darknet` instead of `darknet.exe`, like this:`./darknet detector
 
 Just do `make` in the darknet directory.
 Before make, you can set such options in the `Makefile`: [link](https://github.com/AlexeyAB/darknet/blob/9c1b9a2cf6363546c152251be578a21f3c3caec6/Makefile#L1)
-* `GPU=1` to build with CUDA to accelerate by using GPU (CUDA should be in `/use/local/cuda`)
-* `CUDNN=1` to build with cuDNN v5/v6 to accelerate training by using GPU (cuDNN should be in `/usr/local/cudnn`)
+* `GPU=1` to build with CUDA to accelerate by using GPU (CUDA should be in `/usr/local/cuda`)
+* `CUDNN=1` to build with cuDNN v5-v7 to accelerate training by using GPU (cuDNN should be in `/usr/local/cudnn`)
 * `OPENCV=1` to build with OpenCV 3.x/2.4.x - allows to detect on video files and video streams from network cameras or web-cams
 * `DEBUG=1` to bould debug version of Yolo
 * `OPENMP=1` to build with OpenMP support to accelerate Yolo by using multi-core CPU
@@ -123,13 +126,13 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
 
 ### How to compile on Windows:
 
-1. If you have **MSVS 2015, CUDA 8.0 and OpenCV 3.0** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release**, and do the: Build -> Build darknet
+1. If you have **MSVS 2015, CUDA 9.1 and OpenCV 3.0** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet.sln`, set **x64** and **Release**, and do the: Build -> Build darknet
 
     1.1. Find files `opencv_world320.dll` and `opencv_ffmpeg320_64.dll` in `C:\opencv_3.0\opencv\build\x64\vc14\bin` and put it near with `darknet.exe`
 
-2. If you have other version of **CUDA (not 8.0)** then open `build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 8.0" and change it to your CUDA-version, then do step 1
+2. If you have other version of **CUDA (not 9.1)** then open `build\darknet\darknet.vcxproj` by using Notepad, find 2 places with "CUDA 9.1" and change it to your CUDA-version, then do step 1
 
-3. If you **don't have GPU**, but have **MSVS 2015 and OpenCV 3.0** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet_no_gpu.sln`, set **x64** and **Release**, and do the: Build -> Build darknet
+3. If you **don't have GPU**, but have **MSVS 2015 and OpenCV 3.0** (with paths: `C:\opencv_3.0\opencv\build\include` & `C:\opencv_3.0\opencv\build\x64\vc14\lib`), then start MSVS, open `build\darknet\darknet_no_gpu.sln`, set **x64** and **Release**, and do the: Build -> Build darknet_no_gpu
 
 4. If you have **OpenCV 2.4.13** instead of 3.0 then you should change pathes after `\darknet.sln` is opened
 
@@ -139,7 +142,7 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
   
 5. If you want to build with CUDNN to speed up then:
       
-    * download and install **cuDNN 6.0 for CUDA 8.0**: https://developer.nvidia.com/cudnn
+    * download and install **cuDNN 7.0 for CUDA 9.1**: https://developer.nvidia.com/cudnn
       
     * add Windows system variable `cudnn` with path to CUDNN: https://hsto.org/files/a49/3dc/fc4/a493dcfc4bd34a1295fd15e0e2e01f26.jpg
       
@@ -147,13 +150,13 @@ Before make, you can set such options in the `Makefile`: [link](https://github.c
 
 ### How to compile (custom):
 
-Also, you can to create your own `darknet.sln` & `darknet.vcxproj`, this example for CUDA 8.0 and OpenCV 3.0
+Also, you can to create your own `darknet.sln` & `darknet.vcxproj`, this example for CUDA 9.1 and OpenCV 3.0
 
 Then add to your created project:
 - (right click on project) -> properties  -> C/C++ -> General -> Additional Include Directories, put here: 
 
 `C:\opencv_3.0\opencv\build\include;..\..\3rdparty\include;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(cudnn)\include`
-- (right click on project) -> Build dependecies -> Build Customizations -> set check on CUDA 8.0 or what version you have - for example as here: http://devblogs.nvidia.com/parallelforall/wp-content/uploads/2015/01/VS2013-R-5.jpg
+- (right click on project) -> Build dependecies -> Build Customizations -> set check on CUDA 9.1 or what version you have - for example as here: http://devblogs.nvidia.com/parallelforall/wp-content/uploads/2015/01/VS2013-R-5.jpg
 - add to project all .c & .cu files from `\src`
 - (right click on project) -> properties  -> Linker -> General -> Additional Library Directories, put here: 
 
@@ -165,15 +168,13 @@ Then add to your created project:
 
 `OPENCV;_TIMESPEC_DEFINED;_CRT_SECURE_NO_WARNINGS;_CRT_RAND_S;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)`
 
-- open file: `\src\detector.c` and check lines `#pragma` and `#inclue` for OpenCV.
-
 - compile to .exe (X64 & Release) and put .dll-s near with .exe:
 
     * `pthreadVC2.dll, pthreadGC2.dll` from \3rdparty\dll\x64
 
-    * `cusolver64_80.dll, curand64_80.dll, cudart64_80.dll, cublas64_80.dll` - 80 for CUDA 8.0 or your version, from C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin
+    * `cusolver64_91.dll, curand64_91.dll, cudart64_91.dll, cublas64_91.dll` - 91 for CUDA 9.1 or your version, from C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\bin
 
-    * For OpenCV 3.X: `opencv_world320.dll` and `opencv_ffmpeg320_64.dll` from `C:\opencv_3.0\opencv\build\x64\vc14\bin` 
+    * For OpenCV 3.2: `opencv_world320.dll` and `opencv_ffmpeg320_64.dll` from `C:\opencv_3.0\opencv\build\x64\vc14\bin` 
     * For OpenCV 2.4.13: `opencv_core2413.dll`, `opencv_highgui2413.dll` and `opencv_ffmpeg2413_64.dll` from  `C:\opencv_2.4.13\opencv\build\x64\vc14\bin`
 
 ## How to train (Pascal VOC Data):
@@ -195,7 +196,7 @@ Then add to your created project:
 
 6. Set `batch=64` and `subdivisions=8` in the file `yolo-voc.2.0.cfg`: [link](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.2.0.cfg#L2)
 
-7. Start training by using `train_voc.cmd` or by using the command line: `darknet.exe detector train data/voc.data yolo-voc.2.0.cfg darknet19_448.conv.23`
+7. Start training by using `train_voc.cmd` or by using the command line: `darknet.exe detector train data/voc.data yolo-voc.2.0.cfg darknet19_448.conv.23` (**Note:** If you are using CPU, try `darknet_no_gpu.exe` instead of `darknet.exe`.)
 
 If required change pathes in the file `build\darknet\x64\data\voc.data`
 
@@ -216,9 +217,9 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
   * change line batch to [`batch=64`](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.2.0.cfg#L2)
   * change line subdivisions to [`subdivisions=8`](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/yolo-voc.2.0.cfg#L3)
   * change line `classes=20` to your number of objects
-  * change line #237 from [`filters=125`](https://github.com/AlexeyAB/darknet/blob/master/cfg/yolo-voc.2.0.cfg#L224) to: filters=(classes + 5)*5  
+  * change line #237 from [`filters=125`](https://github.com/AlexeyAB/darknet/blob/master/cfg/yolo-voc.2.0.cfg#L224) to: filters=(classes + 5)x5, so if `classes=2` then should be `filters=35`. Or if you use `classes=1` then write `filters=30`, **do not write in the cfg-file: filters=(classes + 5)x5**.
   
-  (Generally `filters` depends on the `classes`, `num` and `coords`, i.e. equal to `(classes + coords + 1)*num`)
+  (Generally `filters` depends on the `classes`, `num` and `coords`, i.e. equal to `(classes + coords + 1)*num`, where `num` is number of anchors)
 
   So for example, for 2 objects, your file `yolo-obj.cfg` should differ from `yolo-voc.2.0.cfg` in such lines:
 
@@ -272,13 +273,24 @@ https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ
 
 8. Start training by using the command line: `darknet.exe detector train data/obj.data yolo-obj.cfg darknet19_448.conv.23`
 
-    (file `yolo-obj_xxx.weights` will be saved to the `build\darknet\x64\backup\` for each 100 iterations until 1000 iterations has been reached, and after for each 1000 iterations)
+    (file `yolo-obj_xxx.weights` will be saved to the `build\darknet\x64\backup\` for each 100 iterations)
 
 9. After training is complete - get result `yolo-obj_final.weights` from path `build\darknet\x64\backup\`
 
  * After each 1000 iterations you can stop and later start training from this point. For example, after 2000 iterations you can stop training, and later just copy `yolo-obj_2000.weights` from `build\darknet\x64\backup\` to `build\darknet\x64\` and start training using: `darknet.exe detector train data/obj.data yolo-obj.cfg yolo-obj_2000.weights`
 
  * Also you can get result earlier than all 45000 iterations.
+ 
+### How to train tiny-yolo (to detect your custom objects):
+
+Do all the same steps as for the full yolo model as described above. With the exception of:
+* Download default weights file for tiny-yolo-voc: http://pjreddie.com/media/files/tiny-yolo-voc.weights
+* Get pre-trained weights tiny-yolo-voc.conv.13 using command: `darknet.exe partial cfg/tiny-yolo-voc.cfg tiny-yolo-voc.weights tiny-yolo-voc.conv.13 13`
+* Make your custom model `tiny-yolo-obj.cfg` based on `tiny-yolo-voc.cfg` instead of `yolo-voc.2.0.cfg`
+* Start training: `darknet.exe detector train data/obj.data tiny-yolo-obj.cfg tiny-yolo-voc.conv.13`
+
+For training Yolo based on other models ([DenseNet201-Yolo](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/densenet201_yolo.cfg) or [ResNet50-Yolo](https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/resnet50_yolo.cfg)), you can download and get pre-trained weights as showed in this file: https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/partial.cmd
+If you made you custom model that isn't based on other models, then you can train it without pre-trained weights, then will be used random initial weights.
  
 ## When should I stop training:
 
@@ -309,23 +321,42 @@ To get weights from Early Stopping Point:
 
   2.2 If training is stopped after 9000 iterations, to validate some of previous weights use this commands:
 
-* `darknet.exe detector recall data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights`
-* `darknet.exe detector recall data/obj.data yolo-obj.cfg backup\yolo-obj_8000.weights`
-* `darknet.exe detector recall data/obj.data yolo-obj.cfg backup\yolo-obj_9000.weights`
+(If you use another GitHub repository, then use `darknet.exe detector recall`... instead of `darknet.exe detector map`...)
+
+* `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_7000.weights`
+* `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_8000.weights`
+* `darknet.exe detector map data/obj.data yolo-obj.cfg backup\yolo-obj_9000.weights`
 
 And comapre last output lines for each weights (7000, 8000, 9000):
 
-> 7586 7612 7689 RPs/Img: 68.23 **IOU: 77.86%** Recall:99.00%
-
-* **IOU** - the bigger, the better (says about accuracy) - **better to use**
-* **Recall** - the bigger, the better (says about accuracy) - actually Yolo calculates true positives, so it shouldn't be used
+Choose weights-file **with the highest IoU** (intersect of union) and mAP (mean average precision)
 
 For example, **bigger IOU** gives weights `yolo-obj_8000.weights` - then **use this weights for detection**.
 
+Example of custom object detection: `darknet.exe detector test data/obj.data yolo-obj.cfg yolo-obj_8000.weights`
+
+* **IoU** (intersect of union) - average instersect of union of objects and detections for a certain threshold = 0.24
+
+* **mAP** (mean average precision) - mean value of `average precisions` for each class, where `average precision` is average value of 11 points on PR-curve for each possible threshold (each probability of detection) for the same class (Precision-Recall in terms of PascalVOC, where Precision=TP/(TP+FP) and Recall=TP/(TP+FN) ), page-11: http://homepages.inf.ed.ac.uk/ckiw/postscript/ijcv_voc09.pdf
+
+In terms of Wiki, indicators Precision and Recall have a slightly different meaning than in the PascalVOC competition, but **IoU always has the same meaning**.
 
 ![precision_recall_iou](https://hsto.org/files/ca8/866/d76/ca8866d76fb840228940dbf442a7f06a.jpg)
 
-How to calculate **mAP** [voc_eval.py](https://github.com/AlexeyAB/darknet/blob/master/scripts/voc_eval.py) or [datascience.stackexchange link](https://datascience.stackexchange.com/questions/16797/what-does-the-notation-map-5-95-mean)
+### How to calculate mAP on PascalVOC 2007:
+
+1. To calculate mAP (mean average precision) on PascalVOC-2007-test:
+* Download PascalVOC dataset, install Python 3.x and get file `2007_test.txt` as described here: https://github.com/AlexeyAB/darknet#how-to-train-pascal-voc-data
+* Then download file https://raw.githubusercontent.com/AlexeyAB/darknet/master/scripts/voc_label_difficult.py to the dir `build\darknet\x64\data\voc` then run `voc_label_difficult.py` to get the file `difficult_2007_test.txt`
+* Remove symbol `#` from this line to un-comment it: https://github.com/AlexeyAB/darknet/blob/master/build/darknet/x64/data/voc.data#L4
+* Then there are 2 ways to get mAP:
+    1. Using Darknet + Python: run the file `build/darknet/x64/calc_mAP_voc_py.cmd` - you will get mAP for `yolo-voc.cfg` model, mAP = 75.9%
+    2. Using this fork of Darknet: run the file `build/darknet/x64/calc_mAP.cmd` - you will get mAP for `yolo-voc.cfg` model, mAP = 75.8%
+    
+ (The article specifies the value of mAP = 76.8% for YOLOv2 416×416, page-4 table-3: https://arxiv.org/pdf/1612.08242v1.pdf. We get values lower - perhaps due to the fact that the model was trained on a slightly different source code than the code on which the detection is was done)
+
+* if you want to get mAP for `tiny-yolo-voc.cfg` model, then un-comment line for tiny-yolo-voc.cfg and comment line for yolo-voc.cfg in the .cmd-file
+* if you have Python 2.x instead of Python 3.x, and if you use Darknet+Python-way to get mAP, then in your cmd-file use `reval_voc.py` and `voc_eval.py` instead of `reval_voc_py3.py` and `voc_eval_py3.py` from this directory: https://github.com/AlexeyAB/darknet/tree/master/scripts
 
 ### Custom object detection:
 
@@ -341,6 +372,12 @@ Example of custom object detection: `darknet.exe detector test data/obj.data yol
   
   * desirable that your training dataset include images with objects at diffrent: scales, rotations, lightings, from different sides
 
+  * for training on small objects, add the parameter `small_object=1` in the last layer [region] in your cfg-file
+
+  * for training with a large number of objects in each image, add the parameter `max=200` or higher value in the last layer [region] in your cfg-file
+  
+  * to speedup training (with decreasing detection accuracy) do Fine-Tuning instead of Transfer-Learning, set param `stopbackward=1` in one of the penultimate convolutional layers, for example here: https://github.com/AlexeyAB/darknet/blob/cad4d1618fee74471d335314cb77070fee951a42/cfg/yolo-voc.2.0.cfg#L202
+
 2. After training - for detection:
 
   * Increase network-resolution by set in your `.cfg`-file (`height=608` and `width=608`) or (`height=832` and `width=832`) or (any value multiple of 32) - this increases the precision and makes it possible to detect small objects: [link](https://github.com/AlexeyAB/darknet/blob/master/cfg/yolo-voc.2.0.cfg#L4)
@@ -354,10 +391,32 @@ Here you can find repository with GUI-software for marking bounded boxes of obje
 
 With example of: `train.txt`, `obj.names`, `obj.data`, `yolo-obj.cfg`, `air`1-6`.txt`, `bird`1-4`.txt` for 2 classes of objects (air, bird) and `train_obj.cmd` with example how to train this image-set with Yolo v2
 
+## Using Yolo9000
+
+ Simultaneous detection and classification of 9000 objects:
+
+* `yolo9000.weights` - (186 MB Yolo9000 Model) requires 4 GB GPU-RAM: http://pjreddie.com/media/files/yolo9000.weights
+
+* `yolo9000.cfg` - cfg-file of the Yolo9000, also there are paths to the `9k.tree` and `coco9k.map`  https://github.com/AlexeyAB/darknet/blob/617cf313ccb1fe005db3f7d88dec04a04bd97cc2/cfg/yolo9000.cfg#L217-L218
+
+    * `9k.tree` - **WordTree** of 9418 categories  - `<label> <parent_it>`, if `parent_id == -1` then this label hasn't parent: https://raw.githubusercontent.com/AlexeyAB/darknet/master/build/darknet/x64/data/9k.tree
+
+    * `coco9k.map` - map 80 categories from MSCOCO to WordTree `9k.tree`: https://raw.githubusercontent.com/AlexeyAB/darknet/master/build/darknet/x64/data/coco9k.map
+
+* `combine9k.data` - data file, there are paths to: `9k.labels`, `9k.names`, `inet9k.map`, (change path to your `combine9k.train.list`): https://raw.githubusercontent.com/AlexeyAB/darknet/master/build/darknet/x64/data/combine9k.data
+
+    * `9k.labels` - 9418 labels of objects: https://raw.githubusercontent.com/AlexeyAB/darknet/master/build/darknet/x64/data/9k.labels
+
+    * `9k.names` -
+9418 names of objects: https://raw.githubusercontent.com/AlexeyAB/darknet/master/build/darknet/x64/data/9k.names
+
+    * `inet9k.map` - map 200 categories from ImageNet to WordTree `9k.tree`: https://raw.githubusercontent.com/AlexeyAB/darknet/master/build/darknet/x64/data/inet9k.map
+
+
 ## How to use Yolo as DLL
 
 1. To compile Yolo as C++ DLL-file `yolo_cpp_dll.dll` - open in MSVS2015 file `build\darknet\yolo_cpp_dll.sln`, set **x64** and **Release**, and do the: Build -> Build yolo_cpp_dll
-    * You should have installed **CUDA 8.0**
+    * You should have installed **CUDA 9.1**
     * To use cuDNN do: (right click on project) -> properties -> C/C++ -> Preprocessor -> Preprocessor Definitions, and add at the beginning of line: `CUDNN;`
 
 2. To use Yolo as DLL-file in your C++ console application - open in MSVS2015 file `build\darknet\yolo_console_dll.sln`, set **x64** and **Release**, and do the: Build -> Build yolo_console_dll

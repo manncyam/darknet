@@ -51,6 +51,8 @@ void forward_network_gpu(network net, network_state state)
             fill_ongpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
         l.forward_gpu(l, state);
+		if(net.wait_stream)
+			cudaStreamSynchronize(get_cuda_stream());
         state.input = l.output_gpu;
     }
 }
@@ -64,6 +66,7 @@ void backward_network_gpu(network net, network_state state)
     for(i = net.n-1; i >= 0; --i){
         state.index = i;
         layer l = net.layers[i];
+        if (l.stopbackward) break;
         if(i == 0){
             state.input = original_input;
             state.delta = original_delta;
@@ -110,7 +113,15 @@ void forward_backward_network_gpu(network net, float *x, float *y)
     state.delta = 0;
     state.truth = *net.truth_gpu;
     state.train = 1;
+#ifdef CUDNN_HALF
+	int i;
+	for (i = 0; i < net.n; ++i) {
+		layer l = net.layers[i];
+		cuda_convert_f32_to_f16(l.weights_gpu, l.c*l.n*l.size*l.size, l.weights_gpu16);
+	}
+#endif
     forward_network_gpu(net, state);
+	cudaStreamSynchronize(get_cuda_stream());
     backward_network_gpu(net, state);
 }
 
@@ -391,7 +402,8 @@ float *get_network_output_gpu(network net)
 
 float *network_predict_gpu(network net, float *input)
 {
-    cuda_set_device(net.gpu_index);
+	if (net.gpu_index != cuda_get_device())
+		cuda_set_device(net.gpu_index);
     int size = get_network_input_size(net) * net.batch;
     network_state state;
     state.index = 0;
